@@ -1,0 +1,34 @@
+{
+  "tenants": {
+    "nikki": {
+      "id": "nikki",
+      "name": "2 Girls 1 Brush",
+      "active": true,
+      "branding": {
+        "primaryColor": "#355858",
+        "logoUrl": "https://2girls1brushomaha.com/",
+        "heroImageUrl": "https://img1.wsimg.com/isteam/ip/c4f54a3e-13f3-4e08-b1aa-f9ed7a738f07/res1.png",
+        "ctaText": "Call/Text For A Free Quote!"
+      },
+      "lead_routing": {
+        "email": "nicolestorey32@gmail.com",
+        "webhook": "https://hooks.zapier.com/..."
+      },
+      "palettes": "standard_residential_2025"
+    },
+    "future_contractor_example": {
+      "id": "acme_paint",
+      "name": "Acme Painting Co.",
+      "active": false,
+      "branding": {
+        "primaryColor": "#FF0000",
+        "logoUrl": "",
+        "ctaText": "Book Now"
+      },
+      "lead_routing": {
+        "email": "sales@acme.com"
+      },
+      "palettes": "commercial_basics"
+    }
+  }
+}

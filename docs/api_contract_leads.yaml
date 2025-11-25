@@ -1,0 +1,67 @@
+openapi: 3.0.0
+info:
+  title: ColorCulture Lead Gen API
+  version: 1.0.0
+paths:
+  /config/{tenant_id}:
+    get:
+      summary: Get branding and settings for a specific contractor
+      responses:
+        '200':
+          description: Tenant configuration (colors, logo, active status)
+
+  /visualize/process:
+    post:
+      summary: Upload image + coordinates to get a recolored preview
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                target_color_hex:
+                  type: string
+                click_x:
+                  type: integer
+                click_y:
+                  type: integer
+      responses:
+        '200':
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+
+  /lead/submit:
+    post:
+      summary: Submit a new lead to the tenant
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tenant_id
+                - customer_email
+              properties:
+                tenant_id:
+                  type: string
+                customer_name:
+                  type: string
+                customer_email:
+                  type: string
+                customer_phone:
+                  type: string
+                project_details:
+                  type: string
+                original_image_url:
+                  type: string
+                selected_palette:
+                  type: string
+      responses:
+        '201':
+          description: Lead accepted and routed
