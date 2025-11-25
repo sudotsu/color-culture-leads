@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 
 // API Base URL - In production, this would be an env variable
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://color-culture-leads.onrender.com';
 // Default Tenant for V1 Pilot - "Nikki's Painting"
 const DEFAULT_TENANT = 'nikki';
 
