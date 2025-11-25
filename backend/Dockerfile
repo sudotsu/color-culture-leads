@@ -3,10 +3,10 @@
 # 1. Use a lightweight Python base
 FROM python:3.10-slim
 
-# 2. Install system dependencies required for OpenCV
-# (This is the critical step for CV apps on the cloud)
+# 2. Install system dependencies
+# UPDATED: Changed 'libgl1-mesa-glx' to 'libgl1' for Debian 12 compatibility
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
