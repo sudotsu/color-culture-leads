@@ -16,6 +16,10 @@ const SURFACE_TYPES = {
   CEILING: 'Ceiling'
 };
 
+/**
+ * Interactive virtual painter widget that lets users upload a room photo, click to apply painted color visualizations per surface (walls, trim, ceiling), pick and export selected paint colors, and submit a lead form to the configured tenant.
+ * @returns {JSX.Element} The rendered virtual painter widget UI.
+ */
 function App() {
   // --- STATE ---
   const [tenant, setTenant] = useState(null);
