@@ -225,7 +225,7 @@ function App() {
     <div className="widget-container">
       {/* BRAND HEADER */}
       <header className="widget-header">
-        {tenant.branding.logoUrl && (
+        {tenant.branding.logoUrl && tenant.branding.logoUrl.match(/\.(jpg|jpeg|png|gif|svg|webp)$/i) && (
           <img src={tenant.branding.logoUrl} alt={tenant.name} className="brand-logo" />
         )}
         <h3>{tenant.name} Virtual Painter</h3>
