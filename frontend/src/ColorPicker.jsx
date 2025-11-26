@@ -11,6 +11,15 @@ import {
 } from './paintColors';
 import './ColorPicker.css';
 
+/**
+ * Render a paint color picker UI for selecting and inspecting paint colors for a given surface.
+ *
+ * @param {Object} props - Component props.
+ * @param {(color: Object) => void} props.onColorSelect - Callback invoked with the selected color object when a color card is clicked.
+ * @param {Object|null} props.selectedColor - Currently selected color object (or `null`) used to highlight the selection and show details.
+ * @param {string} props.surfaceType - Display name of the surface being painted shown in the header.
+ * @returns {JSX.Element} The rendered ColorPicker component.
+ */
 function ColorPicker({ onColorSelect, selectedColor, surfaceType }) {
   const [activeTab, setActiveTab] = useState('popular');
   const [selectedCategory, setSelectedCategory] = useState(null);
