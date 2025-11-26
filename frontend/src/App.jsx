@@ -234,12 +234,29 @@ function App() {
       {/* STEP 1: UPLOAD */}
       {step === 'upload' && (
         <div className="upload-zone">
-          <Upload size={48} className="icon-primary" />
-          <p>See your room in a new color instantly.</p>
-          <label className="btn-primary">
-            Upload Photo
-            <input type="file" accept="image/*" onChange={handleFileChange} hidden />
-          </label>
+          {/* Hero Image */}
+          {tenant.branding.heroImageUrl && (
+            <div className="hero-image-container">
+              <img
+                src={tenant.branding.heroImageUrl}
+                alt="Professional painting example"
+                className="hero-image"
+              />
+            </div>
+          )}
+
+          <div className="upload-content">
+            <Upload size={48} className="icon-primary" />
+            <h4 className="upload-title">Visualize Your Perfect Color</h4>
+            <p>Upload a photo of your room and see it transformed with professional paint colors.</p>
+            <label className="btn-primary">
+              Upload Your Photo
+              <input type="file" accept="image/*" onChange={handleFileChange} hidden />
+            </label>
+            <p className="upload-tip">
+              <strong>Pro Tip:</strong> For best results, take photos in good lighting with clear walls visible.
+            </p>
+          </div>
         </div>
       )}
 
@@ -285,7 +302,7 @@ function App() {
                alt="Room Preview"
              />
              <div className="instruction-toast">
-               <MousePointer2 size={16} /> Tap {currentSurface.toLowerCase()} to paint
+               <MousePointer2 size={16} /> Click {currentSurface.toLowerCase()} to change color
              </div>
           </div>
 
@@ -330,8 +347,8 @@ function App() {
                 )}
               </div>
               <button className="btn-export" onClick={exportColorSelections}>
-                <Download size={16} />
-                Export Paint Numbers
+                <Download size={18} />
+                Download Color List
               </button>
             </div>
           )}
