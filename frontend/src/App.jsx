@@ -1,20 +1,39 @@
-import { CheckCircle, Loader2, MousePointer2, Upload } from 'lucide-react';
+import { CheckCircle, Download, Loader2, MousePointer2, Palette, Upload } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
+import ColorPicker from './ColorPicker';
+import { getColorById } from './paintColors';
 
 // API Base URL - In production, this would be an env variable
 const API_BASE = 'https://color-culture-leads.onrender.com';
 // Default Tenant for V1 Pilot - "Nikki's Painting"
 const DEFAULT_TENANT = 'nikki';
 
+// Surface types for painting
+const SURFACE_TYPES = {
+  WALLS: 'Walls',
+  TRIM: 'Trim & Doors',
+  CEILING: 'Ceiling'
+};
+
 function App() {
   // --- STATE ---
   const [tenant, setTenant] = useState(null);
-  const [step, setStep] = useState('upload'); // upload | visualize | lead-form | success
+  const [step, setStep] = useState('upload'); // upload | visualize | color-select | lead-form | success
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [originalUrl, setOriginalUrl] = useState(null); // For resetting
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Color Selection State
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [currentSurface, setCurrentSurface] = useState(SURFACE_TYPES.WALLS);
+  const [selectedColors, setSelectedColors] = useState({
+    [SURFACE_TYPES.WALLS]: null,
+    [SURFACE_TYPES.TRIM]: null,
+    [SURFACE_TYPES.CEILING]: null
+  });
+  const [clickCoords, setClickCoords] = useState(null);
 
   // Lead Form State
   const [formData, setFormData] = useState({
@@ -71,48 +90,110 @@ function App() {
     const actualX = Math.floor((displayX / clientWidth) * naturalWidth);
     const actualY = Math.floor((displayY / clientHeight) * naturalHeight);
 
+    // Store click coordinates and show color picker
+    setClickCoords({ x: actualX, y: actualY });
+    setShowColorPicker(true);
+  };
+
+  // Apply selected color to the clicked area
+  const applyColor = async (color) => {
+    if (!clickCoords || !color) return;
+
     setIsProcessing(true);
+    setShowColorPicker(false);
 
-    // Pick a target color (Hardcoded to a neutral gray/blue for demo,
-    // ideally this comes from a palette picker in future versions)
-    const targetHex = "#E2E8F0";
-
-    const formData = new FormData();
-    formData.append('file', imageFile);
-    formData.append('target_color_hex', targetHex);
-    formData.append('click_x', actualX);
-    formData.append('click_y', actualY);
+    const formDataToSend = new FormData();
+    formDataToSend.append('file', imageFile);
+    formDataToSend.append('target_color_hex', color.hex);
+    formDataToSend.append('click_x', clickCoords.x);
+    formDataToSend.append('click_y', clickCoords.y);
 
     try {
       // POST /visualize/process
       const res = await fetch(`${API_BASE}/visualize/process`, {
         method: 'POST',
-        body: formData
+        body: formDataToSend
       });
 
       if (!res.ok) throw new Error("Processing failed");
 
       const blob = await res.blob();
-      setPreviewUrl(URL.createObjectURL(blob));
+      const newImageUrl = URL.createObjectURL(blob);
+      setPreviewUrl(newImageUrl);
+
+      // Update the image file for future painting operations
+      const newFile = new File([blob], imageFile.name, { type: 'image/jpeg' });
+      setImageFile(newFile);
+
+      // Save the selected color for this surface
+      setSelectedColors(prev => ({
+        ...prev,
+        [currentSurface]: color
+      }));
     } catch (err) {
-      alert("Could not paint that wall. Try a clearer area.");
+      alert("Could not paint that area. Try a clearer surface.");
     } finally {
       setIsProcessing(false);
+      setClickCoords(null);
     }
+  };
+
+  // Export color selections
+  const exportColorSelections = () => {
+    const selections = Object.entries(selectedColors)
+      .filter(([_, color]) => color !== null)
+      .map(([surface, color]) => ({
+        surface,
+        colorName: color.name,
+        brand: color.brand,
+        sku: color.sku,
+        hex: color.hex
+      }));
+
+    const exportText = `PAINT COLOR SELECTIONS\n${'='.repeat(50)}\n\n` +
+      selections.map(s =>
+        `${s.surface}:\n` +
+        `  Color: ${s.colorName}\n` +
+        `  Brand: ${s.brand}\n` +
+        `  SKU: ${s.sku}\n` +
+        `  Color Code: ${s.hex}\n`
+      ).join('\n') +
+      `\n${'='.repeat(50)}\n` +
+      `Take these SKU numbers to any paint retailer\n` +
+      `or show this to your painter for exact matching.`;
+
+    // Create downloadable file
+    const blob = new Blob([exportText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'paint-color-selections.txt';
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   // --- 4. LEAD SUBMISSION ---
   const submitLead = async (e) => {
     e.preventDefault();
 
+    // Build color selections string for the project details
+    const colorSelectionsText = Object.entries(selectedColors)
+      .filter(([_, color]) => color !== null)
+      .map(([surface, color]) => `${surface}: ${color.name} (${color.sku} - ${color.brand})`)
+      .join(', ');
+
+    const enhancedProjectDetails = colorSelectionsText
+      ? `${formData.project_details}\n\nSelected Paint Colors: ${colorSelectionsText}`
+      : formData.project_details;
+
     const payload = {
       tenant_id: tenant.id,
       customer_email: formData.customer_email,
       customer_name: formData.customer_name,
       customer_phone: formData.customer_phone,
-      project_details: formData.project_details,
+      project_details: enhancedProjectDetails,
       original_image_url: "pending_s3_upload", // Placeholder for V2
-      selected_palette: "custom_mix"
+      selected_palette: colorSelectionsText || "custom_mix"
     };
 
     try {
@@ -161,6 +242,31 @@ function App() {
       {/* STEP 2: VISUALIZE */}
       {step === 'visualize' && (
         <div className="visualizer-zone">
+          {/* Surface Type Selector */}
+          <div className="surface-selector">
+            <div className="surface-label">
+              <Palette size={16} />
+              <span>Select Surface Type:</span>
+            </div>
+            <div className="surface-buttons">
+              {Object.values(SURFACE_TYPES).map((surface) => (
+                <button
+                  key={surface}
+                  className={`surface-btn ${currentSurface === surface ? 'active' : ''} ${selectedColors[surface] ? 'has-color' : ''}`}
+                  onClick={() => setCurrentSurface(surface)}
+                >
+                  {surface}
+                  {selectedColors[surface] && (
+                    <span
+                      className="color-indicator"
+                      style={{ backgroundColor: selectedColors[surface].hex }}
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="image-wrapper">
              {isProcessing && (
                <div className="overlay-loading">
@@ -175,12 +281,66 @@ function App() {
                alt="Room Preview"
              />
              <div className="instruction-toast">
-               <MousePointer2 size={16} /> Tap a wall to paint it
+               <MousePointer2 size={16} /> Tap {currentSurface.toLowerCase()} to paint
              </div>
           </div>
 
+          {/* Color Picker Modal */}
+          {showColorPicker && (
+            <div className="modal-overlay" onClick={() => setShowColorPicker(false)}>
+              <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+                <ColorPicker
+                  onColorSelect={applyColor}
+                  selectedColor={selectedColors[currentSurface]}
+                  surfaceType={currentSurface}
+                />
+                <button
+                  className="btn-secondary modal-close"
+                  onClick={() => setShowColorPicker(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Selected Colors Summary */}
+          {Object.values(selectedColors).some(c => c !== null) && (
+            <div className="color-summary">
+              <h5>Your Color Selections:</h5>
+              <div className="selected-colors-list">
+                {Object.entries(selectedColors).map(([surface, color]) =>
+                  color && (
+                    <div key={surface} className="selected-color-item">
+                      <div
+                        className="color-dot"
+                        style={{ backgroundColor: color.hex }}
+                      />
+                      <div className="color-details">
+                        <strong>{surface}:</strong> {color.name}
+                        <br />
+                        <span className="sku-badge">{color.sku}</span> - {color.brand}
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+              <button className="btn-export" onClick={exportColorSelections}>
+                <Download size={16} />
+                Export Paint Numbers
+              </button>
+            </div>
+          )}
+
           <div className="actions">
-             <button className="btn-secondary" onClick={() => setPreviewUrl(originalUrl)}>
+             <button className="btn-secondary" onClick={() => {
+               setPreviewUrl(originalUrl);
+               setSelectedColors({
+                 [SURFACE_TYPES.WALLS]: null,
+                 [SURFACE_TYPES.TRIM]: null,
+                 [SURFACE_TYPES.CEILING]: null
+               });
+             }}>
                Reset
              </button>
              <button className="btn-primary" onClick={() => setStep('lead-form')}>
