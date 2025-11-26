@@ -3,7 +3,7 @@ import numpy as np
 from PIL import Image
 import io
 
-def process_wall_preview(image_bytes: bytes, x: int, y: int, hex_color: str, tolerance: int = 30) -> bytes:
+def process_wall_preview(image_bytes: bytes, x: int, y: int, hex_color: str, tolerance: int = 20) -> bytes:
     """
     Rapidly tints a specific wall region while preserving texture.
     Optimized for web latency (<1.5s response).
